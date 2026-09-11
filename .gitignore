@@ -1,0 +1,35 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Empaquetado y distribución (PyInstaller)
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Archivos de respaldo locales
+*.backup.*
+web/app.backup.js
+
+# IDEs y editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos temporales del sistema
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log

@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="auto">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explorador FB</title>
+  <!-- Detección inmediata y síncrona del tema para evitar parpadeos (FOUC) -->
+  <script>
+    (function() {
+      try {
+        let theme = localStorage.getItem('app_theme') || 'auto';
+        let isDark = false;
+        if (theme === 'dark') {
+          isDark = true;
+        } else if (theme === 'light') {
+          isDark = false;
+        } else {
+          isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="lib/katex/katex.min.css">
+  <!-- highlight.js: tema se carga dinámicamente según el tema de la app -->
+  <link id="hljs-theme" rel="stylesheet" href="lib/hljs-light.min.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ════════════════════ BARRA LATERAL ════════════════════ -->
+    <aside class="sidebar">
+
+      <div class="sidebar-header">
+        <div class="brand">
+          <img src="logo.png" alt="Logo" class="brand-logo">
+          <div class="brand-info">
+            <h1 class="brand-title">Explorador FB</h1>
+            <span class="brand-badge" id="root-label">Semestre 4</span>
+          </div>
+        </div>
+        <button id="btn-toggle-sidebar" class="btn-sidebar-toggle" title="Ocultar barra lateral (Ctrl + B)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="3" x2="9" y2="21"/>
+            <polyline points="15 10 13 12 15 14"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Selector de sección: Explorador vs Papelera -->
+      <div class="mode-nav">
+        <button id="nav-tab-files" class="mode-btn active" title="Explorador de archivos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3h6l2 3h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+          </svg>
+          <span>Archivos</span>
+        </button>
+        <button id="nav-tab-trash" class="mode-btn" title="Papelera y almacenamiento">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          <span>Papelera</span>
+          <span id="trash-badge-count" class="badge-pill">4</span>
+        </button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="file-search" class="search-input"
+               placeholder="Buscar archivos..." autocomplete="off" spellcheck="false">
+        <button id="btn-search-clear" class="search-clear" style="display:none;" title="Limpiar">✕</button>
+      </div>
+
+      <!-- Acciones rápidas de árbol -->
+      <div class="tree-quick-actions">
+        <button id="btn-new-folder" class="btn-quick-act" title="Nueva carpeta (Ctrl+Shift+N)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+          </svg>
+          <span>Carpeta</span>
+        </button>
+        <button id="btn-new-file" class="btn-quick-act" title="Nuevo archivo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <span>Archivo</span>
+        </button>
+      </div>
+
+      <!-- Acceso rápido / Favoritos -->
+      <div id="sidebar-favorites" class="sidebar-favorites">
+        <div class="fav-header" id="fav-header">
+          <div class="fav-title-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>Acceso rápido</span>
+          </div>
+          <button id="btn-fav-toggle" class="btn-fav-toggle" title="Mostrar/ocultar favoritos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div id="favorites-list" class="favorites-list"></div>
+      </div>
+
+      <!-- Árbol -->
+      <div id="file-tree" class="file-tree"></div>
+
+      <!-- Pie -->
+      <div class="sidebar-footer">
+        <button id="btn-change-root" class="btn-footer" title="Cambiar carpeta raíz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3h6l2 3h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+            <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+          </svg>
+          <span>Cambiar carpeta</span>
+        </button>
+        <div class="footer-actions">
+          <button id="btn-collapse-all" class="btn-icon-sm" title="Colapsar todo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+              <line x1="10" y1="14" x2="21" y2="3"/><line x1="3" y1="21" x2="14" y2="10"/>
+            </svg>
+          </button>
+          <button id="btn-refresh" class="btn-icon-sm" title="Refrescar (F5)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
+          <button id="btn-reveal-root" class="btn-icon-sm" title="Abrir raíz en Explorador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3h6l2 3h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+              <line x1="12" y1="12" x2="12" y2="18"/><polyline points="9 15 12 18 15 15"/>
+            </svg>
+          </button>
+          <button id="btn-theme-toggle" class="btn-icon-sm" title="Cambiar tema">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+          <button id="btn-open-settings" class="btn-icon-sm" title="Ajustes y configuración (Ctrl+,)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Divisor interactivo para redimensionar barra lateral -->
+    <div id="sidebar-resizer" class="sidebar-resizer" title="Arrastrar para redimensionar barra lateral (doble clic para reiniciar)"></div>
+
+    <!-- ════════════════════ PANEL DE CONTENIDO Y VISTA PREVIA ════════════════════ -->
+    <main class="preview-panel">
+
+      <div id="panel-explorer" class="main-subpanel">
+
+        <!-- Barra de pestañas múltiples (Tabbed Browsing) -->
+        <div id="tabs-bar" class="tabs-bar">
+          <button id="btn-show-sidebar" class="btn-sidebar-toggle-main" title="Mostrar barra lateral (Ctrl + B)" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+              <polyline points="13 10 15 12 13 14"/>
+            </svg>
+          </button>
+          <div id="tabs-container" class="tabs-container"></div>
+          <button id="btn-tab-add" class="btn-tab-add" title="Nueva pestaña (Ctrl + T)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+
+        <!-- Barra de navegación y migas de pan (Breadcrumbs) -->
+        <div class="nav-location-bar">
+          <div class="nav-btn-group">
+            <button id="btn-nav-back" class="btn-icon-nav" title="Atrás (Alt + ←)" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button id="btn-nav-forward" class="btn-icon-nav" title="Adelante (Alt + →)" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button id="btn-nav-up" class="btn-icon-nav" title="Subir nivel (Alt + ↑)" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+
+          <div id="breadcrumbs-bar" class="breadcrumbs-bar">
+            <!-- Migas de pan interactivas -->
+          </div>
+
+          <div class="nav-actions-group">
+            <button id="btn-nav-search" class="btn-icon-nav" title="Búsqueda recursiva en disco (Ctrl + F)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+            <button id="btn-copy-current-path" class="btn-icon-nav" title="Copiar ruta de ubicación activa">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel de vista de carpeta (Cuadrícula / Lista detallada) -->
+        <div id="folder-view-panel" class="folder-view-panel">
+          <div class="folder-view-header">
+            <div class="fv-title-wrap">
+              <span id="fv-folder-icon" class="fv-folder-icon">📁</span>
+              <div class="fv-heading-block">
+                <h2 id="fv-title" class="fv-title">Archivos</h2>
+                <span id="fv-count-badge" class="fv-count-badge">0 elementos</span>
+              </div>
+            </div>
+            <div class="fv-header-controls">
+              <div class="fv-search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="fv-filter-input" placeholder="Filtrar en esta carpeta..." autocomplete="off">
+              </div>
+              <div class="fv-sort-control">
+                <label for="fv-sort-select" class="fv-sort-label" title="Ordenar elementos">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/><polyline points="15 15 18 18 21 15"/><line x1="18" y1="9" x2="18" y2="18"/></svg>
+                </label>
+                <select id="fv-sort-select" class="fv-sort-select" title="Ordenar elementos">
+                  <option value="name-asc">Nombre (A - Z)</option>
+                  <option value="name-desc">Nombre (Z - A)</option>
+                  <option value="date-desc">Fecha (más reciente)</option>
+                  <option value="date-asc">Fecha (más antiguo)</option>
+                  <option value="size-desc">Tamaño (mayor a menor)</option>
+                  <option value="size-asc">Tamaño (menor a mayor)</option>
+                  <option value="type-asc">Tipo / Extensión</option>
+                </select>
+              </div>
+              <div class="view-mode-toggles">
+                <button id="btn-view-grid" class="btn-toggle active" title="Vista en cuadrícula">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+                <button id="btn-view-list" class="btn-toggle" title="Vista en lista detallada">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="folder-content-container" class="folder-content-container view-grid">
+            <!-- Tarjetas de cuadrícula o filas de lista generadas dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Barra de herramientas del visor (visible cuando hay un archivo seleccionado) -->
+        <div id="preview-toolbar" class="preview-toolbar" style="display:none;">
+          <div class="preview-file-info">
+            <span id="preview-icon" class="preview-icon-lg"></span>
+            <div class="preview-name-block">
+              <div id="preview-name" class="preview-name"></div>
+              <div id="preview-meta" class="preview-meta"></div>
+            </div>
+          </div>
+          <div class="preview-toolbar-actions">
+            <button id="preview-btn-toggle-html" class="btn-primary btn-sm" style="display:none;" title="Alternar entre vista web interactiva y código fuente">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span id="preview-btn-toggle-html-text">Renderizar</span>
+            </button>
+            <button id="preview-btn-edit" class="btn-primary btn-sm" style="display:none;" title="Editar archivo directamente en la aplicación">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span id="preview-btn-edit-text">Editar</span>
+            </button>
+            <button id="preview-btn-save" class="btn-success btn-sm" style="display:none;" title="Guardar cambios (Ctrl + S)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Guardar</span>
+            </button>
+            <button id="preview-btn-cancel-edit" class="btn-ghost btn-sm" style="display:none;" title="Cancelar edición y descartar cambios sin guardar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Cancelar</span>
+            </button>
+            <button id="preview-btn-back-to-folder" class="btn-ghost btn-sm" title="Volver a la vista de carpeta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>Carpeta</span>
+            </button>
+            <button id="preview-btn-copy-path" class="btn-ghost btn-sm" title="Copiar ruta absoluta (clic secundario para ruta relativa)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span>Copiar ruta</span>
+            </button>
+            <button id="preview-btn-open" class="btn-primary btn-sm" title="Abrir con la aplicación predeterminada del sistema">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              <span>Abrir</span>
+            </button>
+            <button id="preview-btn-reveal" class="btn-ghost btn-sm" title="Mostrar archivo en el Explorador de Windows">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3h6l2 3h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+              </svg>
+              <span>Examinar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Área de contenido del visor -->
+        <div id="preview-body" class="preview-body" style="display:none;">
+
+        <!-- Estado vacío -->
+        <div id="pv-empty" class="pv-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8">
+            <path d="M3 3h6l2 3h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+          </svg>
+          <p>Selecciona un archivo del árbol<br>para ver su contenido</p>
+        </div>
+
+        <!-- Cargando -->
+        <div id="pv-loading" class="pv-loading" style="display:none;">
+          <div class="pv-spinner"></div>
+          <span>Cargando…</span>
+        </div>
+
+        <!-- Imagen -->
+        <div id="pv-image" class="pv-image-wrap" style="display:none;">
+          <img id="pv-img" class="pv-img" alt="Vista previa">
+        </div>
+
+        <!-- Markdown renderizado -->
+        <div id="pv-markdown" class="pv-markdown markdown-body" style="display:none;"></div>
+
+        <!-- Código fuente con resaltado de sintaxis -->
+        <div id="pv-code" class="pv-code-wrap" style="display:none;">
+          <div class="pv-code-toolbar">
+            <span id="pv-lang-badge" class="pv-lang-badge"></span>
+            <button id="pv-copy-btn" class="btn-copy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copiar
+            </button>
+          </div>
+          <pre class="pv-pre"><code id="pv-code-el"></code></pre>
+        </div>
+
+        <!-- Renderizador interactivo de HTML con CSS y JavaScript -->
+        <div id="pv-html" class="pv-html-wrap" style="display:none;">
+          <div class="pv-html-toolbar">
+            <div class="pv-html-modes">
+              <button id="pv-html-btn-preview" class="pv-html-tab active" title="Ver página web interactiva">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Vista web
+              </button>
+              <button id="pv-html-btn-code" class="pv-html-tab" title="Ver código fuente HTML">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                Código fuente
+              </button>
+            </div>
+            <div class="pv-html-actions">
+              <span id="pv-html-badge" class="pv-lang-badge">HTML5 + JS + CSS</span>
+              <button id="pv-html-btn-reload" class="btn-icon-tool" title="Recargar página (F5)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+              <button id="pv-html-btn-external" class="btn-ghost btn-sm" title="Abrir en navegador web externo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Navegador
+              </button>
+            </div>
+          </div>
+          <div id="pv-html-preview-container" class="pv-html-stage">
+            <iframe id="pv-html-iframe" class="pv-html-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"></iframe>
+          </div>
+          <div id="pv-html-code-container" class="pv-code-wrap" style="display:none;">
+            <pre class="pv-pre"><code id="pv-html-code-el" class="language-html"></code></pre>
+          </div>
+        </div>
+
+        <!-- Texto plano -->
+        <pre id="pv-text" class="pv-text" style="display:none;"></pre>
+
+        <!-- Editor interactivo integrado para texto plano, Markdown y código -->
+        <div id="pv-editor" class="pv-editor-wrap" style="display:none;">
+          <div class="pv-editor-statusbar">
+            <div class="pv-editor-status-left">
+              <span id="pv-editor-mode-badge" class="pv-lang-badge">MODO EDICIÓN</span>
+              <span id="pv-editor-file-badge" class="pv-editor-info-chip">Markdown</span>
+              <span id="pv-editor-dirty-indicator" class="pv-editor-dirty" style="display:none;">● Modificado</span>
+            </div>
+            <div class="pv-editor-status-right">
+              <div class="pv-editor-split-toggles" id="pv-editor-split-controls" style="display:none;">
+                <button id="pv-editor-btn-layout-split" class="pv-editor-tab active" title="Vista dividida (Editor + Vista previa en vivo)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                  Dividida
+                </button>
+                <button id="pv-editor-btn-layout-edit" class="pv-editor-tab" title="Solo editor de texto">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                  Solo editor
+                </button>
+              </div>
+              <span id="pv-editor-stats" class="pv-editor-stats">0 líneas · 0 palabras</span>
+            </div>
+          </div>
+          <div class="pv-editor-workspace">
+            <div id="pv-editor-pane-edit" class="pv-editor-pane">
+              <div class="pv-editor-textarea-container">
+                <div id="pv-editor-line-numbers" class="pv-editor-line-numbers">1</div>
+                <textarea id="pv-editor-textarea" class="pv-editor-textarea" spellcheck="false" placeholder="Escribe aquí..."></textarea>
+              </div>
+            </div>
+            <div id="pv-editor-pane-preview" class="pv-editor-pane pv-editor-preview-pane markdown-body" style="display:none;">
+              <!-- Vista previa en vivo de Markdown / HTML -->
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF renderizado con PDF.js -->
+        <div id="pv-pdf" class="pv-pdf-wrap" style="display:none;">
+          <div class="pv-pdf-toolbar">
+            <div class="pv-pdf-nav">
+              <button id="pdf-prev" class="btn-icon-tool" title="Página anterior">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <span class="pdf-page-indicator">
+                Pág. <span id="pdf-page-num">1</span> / <span id="pdf-page-count">1</span>
+              </span>
+              <button id="pdf-next" class="btn-icon-tool" title="Página siguiente">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+            <div class="pv-pdf-zoom">
+              <button id="pdf-zoom-out" class="btn-icon-tool" title="Alejar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <span id="pdf-zoom-val" class="pdf-zoom-text">100 %</span>
+              <button id="pdf-zoom-in" class="btn-icon-tool" title="Acercar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <button id="pdf-fit-width" class="btn-ghost btn-sm" title="Ajustar ancho">Ajustar</button>
+            </div>
+          </div>
+          <div id="pdf-canvas-container" class="pdf-canvas-container">
+            <canvas id="pdf-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Documento Word (.docx) -->
+        <div id="pv-docx" class="pv-docx-wrap" style="display:none;">
+          <div id="pv-docx-content" class="pv-docx-content"></div>
+        </div>
+
+        <!-- Hoja de cálculo Excel (.xlsx, .xls) -->
+        <div id="pv-excel" class="pv-excel-wrap" style="display:none;">
+          <div class="pv-excel-toolbar">
+            <div id="pv-excel-tabs" class="pv-excel-tabs"></div>
+            <input type="text" id="pv-excel-search" placeholder="Filtrar celdas..." class="pv-excel-search-input">
+          </div>
+          <div id="pv-excel-grid" class="pv-excel-grid"></div>
+        </div>
+
+        <!-- Presentación PowerPoint (.pptx) -->
+        <div id="pv-pptx" class="pv-pptx-wrap" style="display:none;">
+          <div class="pv-pptx-toolbar">
+            <div class="pv-pptx-nav">
+              <button id="pptx-prev" class="btn-icon-tool" title="Diapositiva anterior (←)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <span class="pptx-slide-indicator">
+                Diapositiva <span id="pptx-num">1</span> / <span id="pptx-count">1</span>
+              </span>
+              <button id="pptx-next" class="btn-icon-tool" title="Diapositiva siguiente (→)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+            <div class="pv-pptx-actions">
+              <span class="pptx-keyboard-hint">Teclas: ← / →</span>
+              <button id="pptx-toggle-list" class="btn-ghost btn-sm active" title="Mostrar/ocultar miniaturas">Miniaturas</button>
+              <button id="pptx-btn-fullscreen" class="btn-ghost btn-sm" title="Modo presentación (pantalla completa)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+                Presentación
+              </button>
+            </div>
+          </div>
+          <div class="pv-pptx-stage">
+            <aside id="pptx-sidebar-list" class="pptx-sidebar-list"></aside>
+            <div id="pptx-slide-canvas" class="pptx-slide-canvas"></div>
+          </div>
+        </div>
+
+        <!-- Archivo Comprimido (.zip, .tar, .gz) -->
+        <div id="pv-archive" class="pv-archive-wrap" style="display:none;">
+          <div class="pv-archive-toolbar">
+            <div class="pv-archive-summary" id="pv-archive-summary"></div>
+            <input type="text" id="pv-archive-filter" placeholder="Buscar archivo interno..." class="pv-archive-filter-input">
+          </div>
+          <div class="pv-archive-table-wrap">
+            <table class="pv-archive-table">
+              <thead>
+                <tr>
+                  <th>Archivo</th>
+                  <th>Tamaño</th>
+                  <th>Comprimido</th>
+                  <th>Ahorro</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="pv-archive-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Audio -->
+        <div id="pv-audio" class="pv-audio-wrap" style="display:none;">
+          <div class="pv-audio-card">
+            <div class="pv-audio-disc-wrap">
+              <div class="pv-audio-disc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+            </div>
+            <div class="pv-audio-title" id="pv-audio-title">Audio</div>
+            <audio id="pv-audio-el" controls class="pv-audio-player"></audio>
+          </div>
+        </div>
+
+        <!-- Video -->
+        <div id="pv-video" class="pv-video-wrap" style="display:none;">
+          <video id="pv-video-el" controls playsinline class="pv-video-player"></video>
+        </div>
+
+        <!-- Jupyter Notebook (.ipynb) -->
+        <div id="pv-notebook" class="pv-notebook-wrap" style="display:none;">
+          <div id="pv-notebook-content" class="pv-notebook-content"></div>
+        </div>
+
+        <!-- Sin vista previa -->
+        <div id="pv-none" class="pv-none" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+          <p id="pv-none-msg">Vista previa no disponible para este tipo de archivo.</p>
+          <button id="pv-none-open" class="btn-primary" style="margin-top:12px;">Abrir con programa externo</button>
+        </div>
+
+      </div>
+
+        <!-- Barra de estado inferior del explorador -->
+        <footer id="explorer-status-bar" class="explorer-status-bar">
+          <div class="status-left">
+            <span id="sb-item-count" class="sb-text">0 elementos</span>
+          </div>
+          <div class="status-right">
+            <span id="sb-selection" class="sb-text sb-dim">Listo</span>
+          </div>
+        </footer>
+
+      </div> <!-- /#panel-explorer -->
+
+      <!-- ════════════════════ PANEL PAPELERA (OBSIDIAN VOID) ════════════════════ -->
+      <div id="panel-trash" class="trash-panel" style="display:none;">
+        <div class="trash-container-card">
+          
+          <!-- Cabecera -->
+          <header class="trash-header">
+            <div class="trash-title-area">
+              <div class="trash-tag-row">
+                <span class="trash-pill-badge"><span class="badge-dot"></span> ALMACENAMIENTO</span>
+                <span id="trash-pill-items" class="trash-pill-counter">0 elementos</span>
+              </div>
+              <h2 class="trash-heading">Archivos en papelera</h2>
+              <div class="trash-capacity-label">
+                Uso: <strong id="trash-metric-used">0 B</strong> <span class="trash-metric-sub">liberables</span>
+              </div>
+            </div>
+
+            <div class="trash-header-actions">
+              <button id="trash-btn-sound" class="btn-sound-toggle" title="Activar/desactivar efectos sonoros">
+                <svg id="sound-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                <svg id="sound-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                </svg>
+                <span id="sound-toggle-label">Sonido: ON</span>
+              </button>
+              <button id="trash-btn-empty" class="btn-destructive btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                Vaciar papelera
+              </button>
+            </div>
+          </header>
+
+          <!-- Medidor dinámico de almacenamiento -->
+          <div class="trash-meter-section">
+            <div class="trash-meter-track">
+              <div id="trash-meter-fill" class="trash-meter-fill"></div>
+            </div>
+            <div class="trash-filter-bar">
+              <div class="trash-filter-chips">
+                <button class="chip-filter active" data-filter="all">Todos <span class="chip-count" id="chip-count-all">0</span></button>
+                <button class="chip-filter" data-filter="pdf">PDF <span class="chip-count" id="chip-count-pdf">0</span></button>
+                <button class="chip-filter" data-filter="image">Imágenes <span class="chip-count" id="chip-count-image">0</span></button>
+                <button class="chip-filter" data-filter="archive">ZIP <span class="chip-count" id="chip-count-archive">0</span></button>
+                <button class="chip-filter" data-filter="document">Documentos <span class="chip-count" id="chip-count-doc">0</span></button>
+              </div>
+              <div class="trash-search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="trash-search-input" placeholder="Filtrar archivos..." autocomplete="off">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de archivos eliminados -->
+          <div class="trash-file-list-wrap">
+            <div id="trash-file-list" class="trash-file-list">
+              <!-- Filas dinámicas -->
+            </div>
+            <div id="trash-empty-state" class="trash-empty-state" style="display:none;">
+              <div class="trash-empty-icon">✨</div>
+              <h3>La papelera está limpia</h3>
+              <p>No hay archivos en cuarentena ni almacenamiento retenido.</p>
+            </div>
+          </div>
+
+          <!-- Depósito receptor 3D/Minimalista flotante -->
+          <div class="trash-drop-zone">
+            <div id="trash-can-target" class="trash-can-target" title="Depósito seguro de reciclaje">
+              <div class="trash-can-lid"></div>
+              <div class="trash-can-body">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+              </div>
+              <span class="trash-can-label">Depósito</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Notificación flotante de reversión con anillo temporizador -->
+        <div id="trash-undo-toast" class="trash-undo-toast" style="display:none;">
+          <div class="undo-ring-wrap">
+            <svg class="undo-timer-svg" viewBox="0 0 36 36">
+              <path class="undo-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path id="undo-ring-circle" class="undo-ring-circle" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            </svg>
+            <span id="undo-countdown-num" class="undo-sec">5s</span>
+          </div>
+          <div class="undo-message-block">
+            <span class="undo-title">Archivo enviado a la papelera</span>
+            <span id="undo-filename" class="undo-desc">nombre_archivo.ext</span>
+          </div>
+          <button id="trash-btn-undo-action" class="btn-undo-cta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Deshacer
+          </button>
+        </div>
+
+      </div> <!-- /#panel-trash -->
+    </main>
+  </div>
+
+  <!-- Menú contextual -->
+  <div id="ctx-menu" class="ctx-menu" style="display:none;">
+    <button id="ctx-open" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+      Abrir
+    </button>
+    <button id="ctx-reveal" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 3h6l2 3h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+      </svg>
+      Mostrar en Explorador
+    </button>
+    <div class="ctx-separator"></div>
+    <button id="ctx-new-folder" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+      </svg>
+      Nueva carpeta <span class="ctx-shortcut">Ctrl+Shift+N</span>
+    </button>
+    <button id="ctx-new-file" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      Nuevo archivo
+    </button>
+    <button id="ctx-rename" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      Renombrar <span class="ctx-shortcut">F2</span>
+    </button>
+    <div class="ctx-separator"></div>
+    <button id="ctx-copy-to" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      Copiar a… <span class="ctx-shortcut">Ctrl+C</span>
+    </button>
+    <button id="ctx-move-to" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="5 9 2 12 5 15"/>
+        <polyline points="9 5 12 2 15 5"/>
+        <polyline points="15 19 12 22 9 19"/>
+        <polyline points="19 9 22 12 19 15"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <line x1="12" y1="2" x2="12" y2="22"/>
+      </svg>
+      Mover a… <span class="ctx-shortcut">Ctrl+X</span>
+    </button>
+    <button id="ctx-duplicate" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="8" y="8" width="12" height="12" rx="2"/>
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+      </svg>
+      Duplicar <span class="ctx-shortcut">Ctrl+D</span>
+    </button>
+    <div class="ctx-separator"></div>
+    <button id="ctx-copy-path" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      Copiar ruta absoluta
+    </button>
+    <button id="ctx-copy-rel-path" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="16 18 22 12 16 6"/>
+        <polyline points="8 6 2 12 8 18"/>
+      </svg>
+      Copiar ruta relativa
+    </button>
+    <div class="ctx-separator"></div>
+    <button id="ctx-fav-toggle" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span id="ctx-fav-label">Anclar a favoritos</span>
+    </button>
+    <button id="ctx-properties" class="ctx-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Propiedades <span class="ctx-shortcut">Alt+Enter</span>
+    </button>
+    <div class="ctx-separator"></div>
+    <button id="ctx-toss-trash" class="ctx-item ctx-item-danger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+      Mover a papelera <span class="ctx-shortcut">Supr</span>
+    </button>
+  </div>
+
+  <!-- Modal Pop-up selector de carpeta (Copiar a... / Mover a...) -->
+  <div id="modal-folder-picker" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span id="mfp-badge-mode" class="modal-badge">COPIAR A</span>
+          <h3 id="mfp-title" class="modal-title">Seleccionar carpeta de destino</h3>
+          <p id="mfp-item-name" class="modal-sub"></p>
+        </div>
+        <button id="mfp-btn-close" class="btn-icon-close" title="Cerrar (Escape)">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mfp-search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="mfp-search-input" placeholder="Escribe para buscar carpeta destino..." autocomplete="off">
+        </div>
+
+        <div class="mfp-folder-list" id="mfp-folder-list">
+          <!-- Carpetas disponibles -->
+        </div>
+
+        <div class="mfp-create-row">
+          <button id="mfp-btn-new-subfolder" class="btn-ghost btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva subcarpeta aquí
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="mfp-target-info">
+          <span class="mfp-target-label">Destino seleccionado:</span>
+          <span id="mfp-target-path" class="mfp-target-path">Raíz</span>
+        </div>
+        <div class="modal-footer-actions">
+          <button id="mfp-btn-cancel" class="btn-ghost">Cancelar</button>
+          <button id="mfp-btn-confirm" class="btn-primary">
+            <span id="mfp-confirm-label">Copiar aquí</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Búsqueda recursiva en disco -->
+  <div id="modal-deep-search" class="modal-backdrop" style="display:none;">
+    <div class="modal-card modal-search-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge">BÚSQUEDA PROFUNDA</span>
+          <h3 class="modal-title">Buscar en el sistema de archivos</h3>
+          <p id="mds-scope-label" class="modal-sub">Explorando recursivamente...</p>
+        </div>
+        <button id="mds-btn-close" class="btn-icon-close" title="Cerrar (Escape)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="mds-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="mds-search-input" placeholder="Escribe el nombre de archivo o subcarpeta..." autocomplete="off">
+          <span id="mds-spinner" class="mds-spinner" style="display:none;"></span>
+        </div>
+        <div class="mds-counter-bar">
+          <span id="mds-results-count">0 coincidencias</span>
+          <span class="mds-hint">Doble clic o Enter para abrir</span>
+        </div>
+        <div id="mds-results-list" class="mds-results-list">
+          <div class="mds-empty-msg">Escribe un término para iniciar la búsqueda en disco.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="mds-btn-cancel" class="btn-ghost">Cerrar</button>
+        <button id="mds-btn-open" class="btn-primary" disabled>Ir a la ubicación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Propiedades e Inspección -->
+  <div id="modal-properties" class="modal-backdrop" style="display:none;">
+    <div class="modal-card modal-properties-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span id="prop-icon" class="prop-icon-lg">📄</span>
+          <div>
+            <h3 id="prop-name-heading" class="modal-title">Propiedades</h3>
+            <p id="prop-type-sub" class="modal-sub">Elemento del sistema</p>
+          </div>
+        </div>
+        <button id="prop-btn-close" class="btn-icon-close" title="Cerrar (Escape)">✕</button>
+      </div>
+      <div class="modal-body prop-body">
+        <div class="prop-section">
+          <div class="prop-row"><span class="prop-label">Nombre:</span><span id="prop-val-name" class="prop-val selectable"></span></div>
+          <div class="prop-row"><span class="prop-label">Tipo:</span><span id="prop-val-type" class="prop-val"></span></div>
+          <div class="prop-row"><span class="prop-label">Ubicación:</span><span id="prop-val-location" class="prop-val selectable"></span></div>
+          <div class="prop-row"><span class="prop-label">Ruta completa:</span><span id="prop-val-path" class="prop-val selectable"></span></div>
+        </div>
+        <hr class="prop-divider">
+        <div class="prop-section">
+          <div class="prop-row"><span class="prop-label">Tamaño:</span><span id="prop-val-size" class="prop-val"></span></div>
+          <div id="prop-row-contains" class="prop-row" style="display:none;"><span class="prop-label">Contiene:</span><span id="prop-val-contains" class="prop-val"></span></div>
+        </div>
+        <hr class="prop-divider">
+        <div class="prop-section">
+          <div class="prop-row"><span class="prop-label">Creado:</span><span id="prop-val-created" class="prop-val"></span></div>
+          <div class="prop-row"><span class="prop-label">Modificado:</span><span id="prop-val-modified" class="prop-val"></span></div>
+          <div class="prop-row"><span class="prop-label">Último acceso:</span><span id="prop-val-accessed" class="prop-val"></span></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="prop-btn-copy-path" class="btn-ghost btn-sm">Copiar ruta</button>
+        <button id="prop-btn-reveal" class="btn-ghost btn-sm">Mostrar en Explorador</button>
+        <button id="prop-btn-accept" class="btn-primary btn-sm">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Diálogo Personalizado (Input / Prompt y Confirmación) -->
+  <div id="modal-custom-dialog" class="modal-backdrop" style="display:none;">
+    <div class="modal-card modal-dialog-card">
+      <div class="modal-header">
+        <div class="modal-dialog-icon-wrap" id="mcd-icon-wrap">
+          <span id="mcd-icon">📁</span>
+        </div>
+        <div class="modal-title-wrap">
+          <span id="mcd-badge" class="modal-badge">NUEVA CARPETA</span>
+          <h3 id="mcd-title" class="modal-title">Nombre de la nueva carpeta</h3>
+          <p id="mcd-subtitle" class="modal-sub" style="display:none;"></p>
+        </div>
+        <button id="mcd-btn-close" class="btn-icon-close" title="Cerrar (Escape)">✕</button>
+      </div>
+
+      <div class="modal-body modal-dialog-body">
+        <div id="mcd-message" class="mcd-message" style="display:none;"></div>
+
+        <div id="mcd-input-group" class="mcd-input-group">
+          <label id="mcd-label" for="mcd-input" class="mcd-input-label">Nombre:</label>
+          <div class="mcd-input-wrapper">
+            <input type="text" id="mcd-input" class="mcd-input-field" autocomplete="off" spellcheck="false">
+          </div>
+          <div id="mcd-error-msg" class="mcd-error-msg" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-dialog-footer">
+        <div class="modal-footer-actions">
+          <button id="mcd-btn-cancel" class="btn-ghost">Cancelar</button>
+          <button id="mcd-btn-confirm" class="btn-primary">
+            <span id="mcd-confirm-text">Crear carpeta</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ MODAL DE AJUSTES Y CONFIGURACIÓN ════════════════════ -->
+  <div id="modal-settings" class="modal-backdrop" style="display:none;">
+    <div class="modal-card modal-settings-card">
+      <div class="modal-header">
+        <div class="modal-dialog-icon-wrap">
+          <span style="font-size:20px;">⚙️</span>
+        </div>
+        <div class="modal-title-wrap">
+          <span class="modal-badge">PREFERENCIAS</span>
+          <h3 class="modal-title">Ajustes del Explorador</h3>
+        </div>
+        <button id="settings-btn-close" class="btn-icon-close" title="Cerrar (Escape)">✕</button>
+      </div>
+
+      <div class="settings-modal-tabs">
+        <button class="settings-tab-btn active" data-tab="general">General</button>
+        <button class="settings-tab-btn" data-tab="appearance">Apariencia y Sonido</button>
+        <button class="settings-tab-btn" data-tab="about">Acerca de</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <!-- Pestaña General -->
+        <div id="settings-tab-general" class="settings-tab-pane">
+          <div class="settings-group">
+            <label class="settings-label">Carpeta principal predeterminada (Inicio de la aplicación):</label>
+            <p class="settings-desc">Esta es la carpeta raíz en la que se abrirá siempre el explorador al iniciar.</p>
+            <div class="settings-path-row">
+              <input type="text" id="settings-input-root" class="settings-input-field" spellcheck="false" placeholder="C:\Ruta\De\Inicio">
+              <button id="settings-btn-browse" class="btn-secondary" title="Seleccionar con el explorador nativo">Examinar...</button>
+            </div>
+            <div class="settings-hint-row">
+              <span class="settings-hint-label">Ruta sugerida del sistema:</span>
+              <code id="settings-system-path-hint" class="settings-code-hint"></code>
+              <button id="settings-btn-reset-root" class="btn-text-action">Usar Documentos</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña Apariencia y Sonido -->
+        <div id="settings-tab-appearance" class="settings-tab-pane" style="display:none;">
+          <div class="settings-group">
+            <label class="settings-label" for="settings-select-theme">Tema visual de la interfaz:</label>
+            <select id="settings-select-theme" class="settings-select-field">
+              <option value="auto">Automático (según el sistema operativo)</option>
+              <option value="dark">Tema Oscuro</option>
+              <option value="light">Tema Claro</option>
+            </select>
+          </div>
+
+          <div class="settings-group" style="margin-top:16px;">
+            <label class="settings-label">Efectos sonoros procedurales:</label>
+            <p class="settings-desc">Reproduce sonidos procedurales generados por Web Audio API en acciones de la papelera y el explorador.</p>
+            <label class="settings-switch-wrap">
+              <input type="checkbox" id="settings-toggle-sound" checked>
+              <span class="settings-switch-slider"></span>
+              <span class="settings-switch-text">Activar efectos de audio</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Pestaña Acerca de -->
+        <div id="settings-tab-about" class="settings-tab-pane" style="display:none;">
+          <div class="settings-about-box">
+            <div class="settings-about-header">
+              <span style="font-size:32px;">📂</span>
+              <div>
+                <h4 style="margin:0;font-size:15px;color:var(--text);">Explorador FB</h4>
+                <p id="settings-app-version" style="margin:2px 0 0;font-size:12px;color:var(--text-3);">v4.0.0</p>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:12px 0;line-height:1.5;">
+              Explorador de archivos moderno, ligero y modular de alto rendimiento para Windows, construido con Python, pywebview y tecnologías web nativas.
+            </p>
+            <div style="font-size:11.5px;color:var(--text-3);border-top:1px solid var(--border);padding-top:10px;">
+              <span>Licencia: <strong>MIT</strong></span> • <span>Código abierto</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-dialog-footer">
+        <div class="modal-footer-actions">
+          <button id="settings-btn-cancel" class="btn-ghost">Cancelar</button>
+          <button id="settings-btn-save" class="btn-primary">
+            <span>Guardar cambios</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicadores visuales de gestos de navegación -->
+  <div id="gesture-indicator-back" class="gesture-nav-indicator gesture-nav-left" style="display:none;">
+    <div class="gesture-nav-circle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <span class="gesture-nav-text">Atrás</span>
+  </div>
+  <div id="gesture-indicator-forward" class="gesture-nav-indicator gesture-nav-right" style="display:none;">
+    <span class="gesture-nav-text">Adelante</span>
+    <div class="gesture-nav-circle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/katex/katex.min.js"></script>
+  <script src="lib/marked.min.js"></script>
+  <script src="lib/highlight.min.js"></script>
+  <!-- Estado global del explorador -->
+  <script src="js/globals.js"></script>
+
+  <!-- Utilidades -->
+  <script src="js/utils/formatters.js"></script>
+  <script src="js/utils/theme.js"></script>
+
+  <!-- Interfaz de usuario básica y efectos -->
+  <script src="js/ui/soundfx.js"></script>
+  <script src="js/ui/sidebar.js"></script>
+  <script src="js/ui/dialogs.js"></script>
+  <script src="js/ui/tooltips.js"></script>
+
+  <!-- Modales del sistema -->
+  <script src="js/modals/properties-modal.js"></script>
+  <script src="js/modals/folder-picker.js"></script>
+  <script src="js/modals/settings-modal.js"></script>
+
+  <!-- Visor de contenido -->
+  <script src="js/viewer/viewer.js"></script>
+
+  <!-- Navegación e historial -->
+  <script src="js/navigation/history.js"></script>
+  <script src="js/navigation/gestures.js"></script>
+  <script src="js/navigation/dragdrop.js"></script>
+
+  <!-- Vistas -->
+  <script src="js/views/favorites.js"></script>
+  <script src="js/views/file-tree.js"></script>
+  <script src="js/views/folder-view.js"></script>
+  <script src="js/views/trash.js"></script>
+
+  <!-- Pestañas y búsqueda -->
+  <script src="js/navigation/tabs.js"></script>
+  <script src="js/modals/search-modal.js"></script>
+
+  <!-- Menú contextual y controles de interfaz -->
+  <script src="js/ui/context-menu.js"></script>
+  <script src="js/ui/controls.js"></script>
+
+  <!-- Orquestador principal y arranque -->
+  <script src="app.js?v=4.0"></script>
+</body>
+</html>
+
