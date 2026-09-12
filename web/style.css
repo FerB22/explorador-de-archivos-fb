@@ -1119,21 +1119,129 @@ mark{background:var(--mark-hl);color:inherit;border-radius:2px;padding:0 1px;}
 }
 .pv-audio-card {
   background: var(--bg-surf); border: 1px solid var(--border); border-radius: var(--r-md);
-  padding: 36px 40px; box-shadow: var(--shadow); display: flex; flex-direction: column;
-  align-items: center; gap: 18px; width: 100%; max-width: 440px;
-  animation: pulseGlow 4s infinite ease-in-out;
+  padding: 32px 36px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  align-items: center; gap: 20px; width: 100%; max-width: 440px;
+  position: relative; overflow: hidden;
 }
 .pv-audio-disc-wrap {
-  width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle, var(--accent) 0%, rgba(37,99,235,0.15) 70%, transparent 100%);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pv-audio-disc-wrap.playing {
+  animation: audioPulseAnim 2.4s infinite ease-in-out;
+}
+@keyframes audioPulseAnim {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.3)); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(37, 99, 235, 0.6)); }
 }
 .pv-audio-disc {
-  width: 56px; height: 56px; border-radius: 50%; color: var(--accent);
+  width: 60px; height: 60px; border-radius: 50%; color: var(--accent);
   display: flex; align-items: center; justify-content: center;
 }
-.pv-audio-disc svg { width: 44px; height: 44px; }
-.pv-audio-title { font-size: 14px; font-weight: 700; color: var(--text); text-align: center; }
-.pv-audio-player { width: 100%; outline: none; border-radius: 20px; }
+.pv-audio-disc svg { width: 46px; height: 46px; }
+
+.pv-audio-meta {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; width: 100%;
+}
+.pv-audio-badge {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--accent); background: var(--act-bg);
+  padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
+}
+.pv-audio-title {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  word-break: break-word; line-height: 1.35; margin-top: 2px;
+}
+.pv-audio-subtitle {
+  font-size: 11.5px; color: var(--text-3);
+}
+
+/* Contenedor del reproductor custom */
+.pv-custom-audio-player {
+  width: 100%; display: flex; flex-direction: column; gap: 14px;
+}
+
+/* Barra de progreso */
+.pv-audio-progress-container {
+  width: 100%; display: flex; flex-direction: column; gap: 6px;
+}
+.pv-audio-progress-bar {
+  position: relative; width: 100%; height: 6px; border-radius: 3px;
+  background: var(--border-md); cursor: pointer; user-select: none;
+  transition: height var(--tr);
+}
+.pv-audio-progress-bar:hover {
+  height: 8px;
+}
+.pv-audio-progress-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+  background: var(--accent); border-radius: 3px; pointer-events: none;
+  transition: width 0.05s linear;
+}
+.pv-audio-progress-handle {
+  position: absolute; top: 50%; left: 0%; width: 12px; height: 12px;
+  border-radius: 50%; background: #ffffff; border: 2px solid var(--accent);
+  transform: translate(-50%, -50%) scale(0); pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3); transition: transform var(--tr);
+}
+.pv-audio-progress-bar:hover .pv-audio-progress-handle,
+.pv-audio-progress-bar:active .pv-audio-progress-handle {
+  transform: translate(-50%, -50%) scale(1);
+}
+.pv-audio-times {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; font-family: var(--font-mono); color: var(--text-3);
+}
+
+/* Botonera y controles */
+.pv-audio-controls {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding-top: 4px;
+}
+.pv-audio-btn {
+  border: none; background: transparent; color: var(--text-2);
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: all var(--tr); outline: none;
+}
+.pv-audio-btn:hover {
+  color: var(--text); background: var(--bg-hover);
+}
+.pv-audio-btn-step {
+  width: 32px; height: 32px;
+}
+.pv-audio-btn-play {
+  width: 44px; height: 44px; background: var(--accent); color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+.pv-audio-btn-play:hover {
+  background: var(--accent); opacity: 0.9; color: #ffffff;
+  transform: scale(1.05); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+}
+.pv-audio-btn-play:active {
+  transform: scale(0.96);
+}
+
+/* Control de volumen deslizante */
+.pv-audio-volume-wrap {
+  display: flex; align-items: center; gap: 6px;
+}
+.pv-audio-btn-vol {
+  width: 28px; height: 28px;
+}
+.pv-audio-volume-slider {
+  width: 70px; height: 4px; -webkit-appearance: none; appearance: none;
+  background: var(--border-md); border-radius: 2px; outline: none; cursor: pointer;
+  transition: background var(--tr);
+}
+.pv-audio-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; transition: transform var(--tr);
+}
+.pv-audio-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
 
 .pv-video-wrap {
   display: flex; align-items: center; justify-content: center;

@@ -531,13 +531,83 @@
         <!-- Audio -->
         <div id="pv-audio" class="pv-audio-wrap" style="display:none;">
           <div class="pv-audio-card">
-            <div class="pv-audio-disc-wrap">
-              <div class="pv-audio-disc">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            <!-- Elemento de audio oculto para reproducción nativa -->
+            <audio id="pv-audio-el" preload="metadata"></audio>
+
+            <div class="pv-audio-disc-wrap" id="pv-audio-disc-wrap">
+              <div class="pv-audio-disc" id="pv-audio-disc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
               </div>
             </div>
-            <div class="pv-audio-title" id="pv-audio-title">Audio</div>
-            <audio id="pv-audio-el" controls class="pv-audio-player"></audio>
+
+            <div class="pv-audio-meta">
+              <div class="pv-audio-badge">REPRODUCTOR DE AUDIO</div>
+              <div class="pv-audio-title" id="pv-audio-title">Audio</div>
+              <div class="pv-audio-subtitle" id="pv-audio-subtitle">Formato de audio local</div>
+            </div>
+
+            <!-- Interfaz personalizada del reproductor -->
+            <div class="pv-custom-audio-player">
+              <!-- Barra de progreso / Scrubbing -->
+              <div class="pv-audio-progress-container">
+                <div class="pv-audio-progress-bar" id="pv-audio-progress-bar">
+                  <div class="pv-audio-progress-fill" id="pv-audio-progress-fill"></div>
+                  <div class="pv-audio-progress-handle" id="pv-audio-progress-handle"></div>
+                </div>
+                <div class="pv-audio-times">
+                  <span id="pv-audio-current-time">0:00</span>
+                  <span id="pv-audio-duration">0:00</span>
+                </div>
+              </div>
+
+              <!-- Controles principales -->
+              <div class="pv-audio-controls">
+                <!-- Retroceder 5s -->
+                <button class="pv-audio-btn pv-audio-btn-step" id="pv-audio-btn-backward" title="Retroceder 5 segundos">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
+                  </svg>
+                </button>
+
+                <!-- Reproducir / Pausar -->
+                <button class="pv-audio-btn pv-audio-btn-play" id="pv-audio-btn-toggle" title="Reproducir / Pausar (Espacio)">
+                  <svg id="pv-audio-icon-play" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <polygon points="6 4 20 12 6 20 6 4"/>
+                  </svg>
+                  <svg id="pv-audio-icon-pause" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:none;">
+                    <rect x="6" y="4" width="4" height="16"/>
+                    <rect x="14" y="4" width="4" height="16"/>
+                  </svg>
+                </button>
+
+                <!-- Avanzar 5s -->
+                <button class="pv-audio-btn pv-audio-btn-step" id="pv-audio-btn-forward" title="Avanzar 5 segundos">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                  </svg>
+                </button>
+
+                <!-- Control de volumen -->
+                <div class="pv-audio-volume-wrap">
+                  <button class="pv-audio-btn pv-audio-btn-vol" id="pv-audio-btn-mute" title="Silenciar / Activar sonido">
+                    <svg id="pv-audio-icon-vol" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    <svg id="pv-audio-icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <line x1="23" y1="9" x2="17" y2="15"></line>
+                      <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                  </button>
+                  <input type="range" id="pv-audio-volume-slider" class="pv-audio-volume-slider" min="0" max="1" step="0.05" value="1" title="Volumen">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
