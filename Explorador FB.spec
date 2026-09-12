@@ -12,6 +12,7 @@ hiddenimports = [
     'services.document_reader_service',
     'services.trash_service',
     'services.window_theme',
+    'services.media_server',
     'mammoth',
     'openpyxl',
     'pptx',
