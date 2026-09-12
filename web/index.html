@@ -567,9 +567,10 @@
               <div class="pv-audio-controls">
                 <!-- Retroceder 5s -->
                 <button class="pv-audio-btn pv-audio-btn-step" id="pv-audio-btn-backward" title="Retroceder 5 segundos">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
                   </svg>
+                  <span class="pv-step-tag">-5</span>
                 </button>
 
                 <!-- Reproducir / Pausar -->
@@ -585,7 +586,8 @@
 
                 <!-- Avanzar 5s -->
                 <button class="pv-audio-btn pv-audio-btn-step" id="pv-audio-btn-forward" title="Avanzar 5 segundos">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <span class="pv-step-tag">+5</span>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
                   </svg>
                 </button>
@@ -648,15 +650,17 @@
                   </button>
 
                   <!-- Retroceder 5s -->
-                  <button class="pv-video-btn" id="pv-video-btn-backward" title="Retroceder 5 segundos (←)">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <button class="pv-video-btn pv-video-btn-step" id="pv-video-btn-backward" title="Retroceder 5 segundos (←)">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
                     </svg>
+                    <span class="pv-step-tag">-5</span>
                   </button>
 
                   <!-- Avanzar 5s -->
-                  <button class="pv-video-btn" id="pv-video-btn-forward" title="Avanzar 5 segundos (→)">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <button class="pv-video-btn pv-video-btn-step" id="pv-video-btn-forward" title="Avanzar 5 segundos (→)">
+                    <span class="pv-step-tag">+5</span>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
                     </svg>
                   </button>
