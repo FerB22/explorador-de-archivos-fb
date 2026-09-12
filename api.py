@@ -278,22 +278,24 @@ class AppApi:
 
         dialog_title = "Seleccionar carpeta raíz del explorador"
 
-        # Reposicionar el diálogo nativo en la esquina superior izquierda (pantalla secundaria / primaria)
+        # Reposicionar el diálogo nativo en la esquina superior izquierda de forma determinista
         def _position_dialog_top_left():
             try:
                 import win32gui
                 import win32con
-                target_hwnd = None
 
-                for _ in range(80):
-                    time.sleep(0.02)
+                # Escaneo durante 3 segundos para atrapar la ventana en cuanto se cree
+                for _ in range(120):
+                    time.sleep(0.025)
+                    found_hwnds = []
+
                     def enum_cb(hwnd, _):
-                        nonlocal target_hwnd
                         if win32gui.IsWindowVisible(hwnd):
-                            text = win32gui.GetWindowText(hwnd)
-                            if dialog_title in text:
-                                target_hwnd = hwnd
-                                return False
+                            txt = win32gui.GetWindowText(hwnd)
+                            cls = win32gui.GetClassName(hwnd)
+                            # Coincidencia flexible por título o por clase de cuadro de diálogo
+                            if (dialog_title in txt) or ("Seleccionar carpeta" in txt) or (cls == "#32770" and "carpeta" in txt.lower()):
+                                found_hwnds.append(hwnd)
                         return True
 
                     try:
@@ -301,17 +303,18 @@ class AppApi:
                     except Exception:
                         pass
 
-                    if target_hwnd:
-                        # Repetir el ajuste durante unos ciclos para anular el centrado por defecto de Windows
-                        for _ in range(8):
-                            win32gui.SetWindowPos(
-                                target_hwnd,
-                                win32con.HWND_TOPMOST,
-                                30, 30,
-                                0, 0,
-                                win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
-                            )
-                            time.sleep(0.025)
+                    if found_hwnds:
+                        # Repetir la asignación de posición para anular el recentrado por defecto de Windows
+                        for target_hwnd in found_hwnds:
+                            for _ in range(10):
+                                win32gui.SetWindowPos(
+                                    target_hwnd,
+                                    win32con.HWND_TOPMOST,
+                                    30, 30,
+                                    0, 0,
+                                    win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
+                                )
+                                time.sleep(0.02)
                         break
             except Exception:
                 pass
