@@ -356,18 +356,34 @@ class DocumentReaderService:
         except Exception as e:
             return {"type": "none", "message": f"Error al leer archivo comprimido: {str(e)}"}
 
-    # ── Audio y Video ────────────────────────────────────────────────────────
+    # ── Audio y Video (Streaming con soporte para archivos de cualquier tamaño)
     @staticmethod
     def read_media(path: str, ext: str, size: int, media_kind: str) -> dict:
-        if size > MAX_MEDIA_BYTES:
-            return {"type": "none", "message": f"Archivo multimedia demasiado grande ({format_size(size)}). Límite: 100 MB."}
-
         mime_types = {
             '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
             '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.flac': 'audio/flac',
             '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
+            '.mkv': 'video/x-matroska',
         }
         mime = mime_types.get(ext, f"{media_kind}/{ext.lstrip('.')}")
+
+        # Si el micro-servidor local de streaming está disponible, generar URL de streaming HTTP con Range Requests
+        try:
+            from services.media_server import LocalMediaServer
+            media_server = LocalMediaServer.get_instance()
+            stream_url = media_server.get_media_url(path)
+            return {
+                "type": media_kind,
+                "data_url": stream_url,
+                "mime": mime,
+                "message": ""
+            }
+        except Exception:
+            pass
+
+        # Respaldo (fallback) mediante Data URL base64 únicamente para archivos moderados (< 50 MB)
+        if size > 50 * 1024 * 1024:
+            return {"type": "none", "message": f"Archivo multimedia demasiado grande ({format_size(size)})."}
 
         try:
             with open(path, "rb") as f:

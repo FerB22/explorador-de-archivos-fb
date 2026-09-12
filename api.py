@@ -238,8 +238,8 @@ class AppApi:
                 audio_res = DocumentReaderService.read_media(path, ext, size, "audio")
                 return {**base, **audio_res}
 
-            # ── Video (.mp4, .webm, .mov) ─────────────────────────────────────
-            if ext in {'.mp4', '.webm', '.mov'}:
+            # ── Video (.mp4, .webm, .mov, .mkv) ──────────────────────────────
+            if ext in {'.mp4', '.webm', '.mov', '.mkv'}:
                 video_res = DocumentReaderService.read_media(path, ext, size, "video")
                 return {**base, **video_res}
 
