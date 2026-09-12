@@ -6,6 +6,8 @@ import os
 import sys
 import json
 import base64
+import threading
+import time
 import tkinter as tk
 from tkinter import filedialog
 
@@ -274,12 +276,41 @@ class AppApi:
         elif "persist" in kwargs:
             persist = bool(kwargs["persist"])
 
+        dialog_title = "Seleccionar carpeta raíz del explorador"
+
+        # Reposicionar el diálogo nativo en la esquina superior izquierda (pantalla secundaria / primaria)
+        def _position_dialog_top_left():
+            try:
+                import win32gui
+                import win32con
+                for _ in range(60):
+                    time.sleep(0.04)
+                    # Buscar por título de ventana exacto o clase de diálogo estándar #32770
+                    hwnd = win32gui.FindWindow(None, dialog_title)
+                    if not hwnd:
+                        hwnd = win32gui.FindWindow("#32770", dialog_title)
+                    if hwnd:
+                        # Colocar en esquina superior izquierda con margen de 35px
+                        win32gui.SetWindowPos(
+                            hwnd,
+                            win32con.HWND_TOPMOST,
+                            35, 35,
+                            0, 0,
+                            win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
+                        )
+                        break
+            except Exception:
+                pass
+
+        threading.Thread(target=_position_dialog_top_left, daemon=True).start()
+
         root_tk = tk.Tk()
         root_tk.withdraw()
+        root_tk.geometry("+35+35")
         root_tk.attributes("-topmost", True)
         folder = filedialog.askdirectory(
             parent=root_tk,
-            title="Seleccionar carpeta raíz del explorador",
+            title=dialog_title,
             initialdir=self._config.get("root_path", get_default_root_path())
         )
         root_tk.destroy()

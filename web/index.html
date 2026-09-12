@@ -963,7 +963,12 @@
             <p class="settings-desc">Esta es la carpeta raíz en la que se abrirá siempre el explorador al iniciar.</p>
             <div class="settings-path-row">
               <input type="text" id="settings-input-root" class="settings-input-field" spellcheck="false" placeholder="C:\Ruta\De\Inicio">
-              <button id="settings-btn-browse" class="btn-secondary" title="Seleccionar con el explorador nativo">Examinar...</button>
+              <button id="settings-btn-browse" class="btn-settings-browse" title="Examinar carpeta en disco">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Examinar…</span>
+              </button>
             </div>
             <div class="settings-hint-row">
               <span class="settings-hint-label">Ruta sugerida del sistema:</span>
