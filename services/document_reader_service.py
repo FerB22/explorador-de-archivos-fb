@@ -44,12 +44,12 @@ def _get_slide_num_from_name(fpath: str) -> int:
     return int(m.group()) if m else 999999
 
 # ── Límites de tamaño ──────────────────────────────────────────────────────────
-MAX_MEDIA_BYTES    = 100 * 1024 * 1024  # 100 MB para audio/video
-MAX_DOCX_BYTES     = 30 * 1024 * 1024   # 30 MB para documentos Word
-MAX_EXCEL_BYTES    = 25 * 1024 * 1024   # 25 MB para hojas de cálculo
-MAX_PPTX_BYTES     = 60 * 1024 * 1024   # 60 MB para presentaciones
-MAX_ARCHIVE_BYTES  = 150 * 1024 * 1024  # 150 MB para inspeccionar ZIP/TAR
-MAX_NOTEBOOK_BYTES = 20 * 1024 * 1024   # 20 MB para notebooks
+MAX_MEDIA_BYTES    = 500 * 1024 * 1024  # 500 MB para fallback de audio/video
+MAX_DOCX_BYTES     = 100 * 1024 * 1024  # 100 MB para documentos Word
+MAX_EXCEL_BYTES    = 100 * 1024 * 1024  # 100 MB para hojas de cálculo
+MAX_PPTX_BYTES     = 200 * 1024 * 1024  # 200 MB para presentaciones
+MAX_ARCHIVE_BYTES  = 500 * 1024 * 1024  # 500 MB para inspeccionar ZIP/TAR
+MAX_NOTEBOOK_BYTES = 50 * 1024 * 1024   # 50 MB para notebooks
 
 
 def format_size(bytes_num: int) -> str:
@@ -68,7 +68,7 @@ class DocumentReaderService:
     @staticmethod
     def read_docx(path: str, size: int) -> dict:
         if size > MAX_DOCX_BYTES:
-            return {"type": "none", "message": f"Documento Word demasiado grande ({format_size(size)}). Límite: 30 MB."}
+            return {"type": "none", "message": f"Documento Word demasiado grande ({format_size(size)}). Límite: 100 MB."}
         try:
             import mammoth
             with open(path, "rb") as docx_file:
@@ -86,7 +86,7 @@ class DocumentReaderService:
     @staticmethod
     def read_excel(path: str, size: int) -> dict:
         if size > MAX_EXCEL_BYTES:
-            return {"type": "none", "message": f"Archivo Excel demasiado grande ({format_size(size)}). Límite: 25 MB."}
+            return {"type": "none", "message": f"Archivo Excel demasiado grande ({format_size(size)}). Límite: 100 MB."}
         try:
             import openpyxl
             wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
@@ -135,7 +135,7 @@ class DocumentReaderService:
     @staticmethod
     def read_pptx(path: str, size: int) -> dict:
         if size > MAX_PPTX_BYTES:
-            return {"type": "none", "message": f"Presentación PowerPoint demasiado grande ({format_size(size)}). Límite: 60 MB."}
+            return {"type": "none", "message": f"Presentación PowerPoint demasiado grande ({format_size(size)}). Límite: 200 MB."}
 
         abs_path = os.path.abspath(path)
         try:
@@ -401,7 +401,7 @@ class DocumentReaderService:
     @staticmethod
     def read_notebook(path: str, size: int) -> dict:
         if size > MAX_NOTEBOOK_BYTES:
-            return {"type": "none", "message": f"Cuaderno Jupyter demasiado grande ({format_size(size)}). Límite: 20 MB."}
+            return {"type": "none", "message": f"Cuaderno Jupyter demasiado grande ({format_size(size)}). Límite: 50 MB."}
         try:
             with open(path, "r", encoding="utf-8") as f:
                 nb = json.load(f)

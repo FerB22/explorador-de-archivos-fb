@@ -37,8 +37,10 @@ def _get_config_path_read() -> str:
 def _get_config_path_write() -> str:
     return os.path.join(APP_DIR, "config.json")
 
-MAX_TEXT_BYTES  = 512 * 1024       # 500 KB para texto/código/markdown
-MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB para imágenes
+MAX_TEXT_BYTES  = 5 * 1024 * 1024    # 5 MB para texto/código/markdown
+MAX_HTML_BYTES  = 20 * 1024 * 1024   # 20 MB para archivos HTML/HTM
+MAX_IMAGE_BYTES = 40 * 1024 * 1024   # 40 MB para imágenes
+MAX_PDF_BYTES   = 200 * 1024 * 1024  # 200 MB para documentos PDF
 
 IMAGE_EXTS    = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'}
 MARKDOWN_EXTS = {'.md', '.markdown'}
@@ -162,10 +164,9 @@ class AppApi:
         try:
             # ── Archivos PDF ──────────────────────────────────────────────────
             if ext == '.pdf':
-                MAX_PDF_BYTES = 50 * 1024 * 1024  # 50 MB
                 if size > MAX_PDF_BYTES:
                     return self._no_preview(name, ext, size,
-                        f"Documento PDF demasiado grande ({size // (1024*1024)} MB). Límite: 50 MB.")
+                        f"Documento PDF demasiado grande ({size // (1024*1024)} MB). Límite: 200 MB.")
                 with open(path, "rb") as f:
                     data = base64.b64encode(f.read()).decode("utf-8")
                 return {**base, "type": "pdf",
@@ -175,18 +176,41 @@ class AppApi:
             if ext in IMAGE_EXTS:
                 if size > MAX_IMAGE_BYTES:
                     return self._no_preview(name, ext, size,
-                        f"Imagen demasiado grande ({size // (1024*1024)} MB). Límite: 8 MB.")
+                        f"Imagen demasiado grande ({size // (1024*1024)} MB). Límite: 40 MB.")
                 with open(path, "rb") as f:
                     data = base64.b64encode(f.read()).decode("utf-8")
                 mime = MIME_MAP.get(ext, "image/png")
                 return {**base, "type": "image",
                         "content": f"data:{mime};base64,{data}", "message": ""}
 
+            # ── Páginas y documentos Web (.html, .htm) ────────────────────────
+            if ext in {'.html', '.htm'}:
+                if size > MAX_HTML_BYTES:
+                    return self._no_preview(name, ext, size,
+                        f"Archivo HTML demasiado grande ({size // (1024*1024)} MB). Límite: 20 MB.")
+
+                content = None
+                for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+                    try:
+                        with open(path, "r", encoding=enc) as f:
+                            content = f.read()
+                        break
+                    except (UnicodeDecodeError, LookupError):
+                        continue
+
+                if content is None:
+                    return self._no_preview(name, ext, size,
+                        "No se puede leer el archivo HTML (codificación no soportada).")
+
+                dir_path = os.path.dirname(os.path.abspath(path))
+                return {**base, "type": "html", "content": content,
+                        "language": "html", "dir_path": dir_path, "path": path, "message": ""}
+
             # ── Texto, código y markdown ──────────────────────────────────────
             if ext in MARKDOWN_EXTS | CODE_EXTS | TEXT_EXTS:
                 if size > MAX_TEXT_BYTES:
                     return self._no_preview(name, ext, size,
-                        f"Archivo demasiado grande ({size // 1024} KB). Límite: 500 KB.")
+                        f"Archivo demasiado grande ({size // (1024*1024) if size >= 1024*1024 else size // 1024} {'MB' if size >= 1024*1024 else 'KB'}). Límite: 5 MB.")
 
                 content = None
                 for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
@@ -203,10 +227,6 @@ class AppApi:
 
                 if ext in MARKDOWN_EXTS:
                     return {**base, "type": "markdown", "content": content, "message": ""}
-                elif ext in {'.html', '.htm'}:
-                    dir_path = os.path.dirname(os.path.abspath(path))
-                    return {**base, "type": "html", "content": content,
-                            "language": "html", "dir_path": dir_path, "path": path, "message": ""}
                 elif ext in CODE_EXTS:
                     return {**base, "type": "code", "content": content,
                             "language": LANG_MAP.get(ext, ""), "message": ""}
