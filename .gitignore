@@ -34,4 +34,8 @@ Desktop.ini
 # Logs
 *.log
 
+# Instaladores de salida
+installer_output/
+*.iss
+
 implementation_plan.md
