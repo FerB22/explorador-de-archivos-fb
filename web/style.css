@@ -2673,6 +2673,28 @@ mark{background:var(--mark-hl);color:inherit;border-radius:2px;padding:0 1px;}
   flex-direction: column;
 }
 
+.modal-settings-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px 16px;
+  text-align: center;
+}
+
+.modal-settings-title-wrap {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.modal-settings-header .btn-icon-close {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+}
+
 .settings-modal-tabs {
   display: flex;
   gap: 4px;

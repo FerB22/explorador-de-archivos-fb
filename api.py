@@ -267,7 +267,13 @@ class AppApi:
         self._config = _load_config()
         return self._config
 
-    def select_root_folder(self, persist: bool = False) -> dict:
+    def select_root_folder(self, *args, **kwargs) -> dict:
+        persist = False
+        if args:
+            persist = bool(args[0])
+        elif "persist" in kwargs:
+            persist = bool(kwargs["persist"])
+
         root_tk = tk.Tk()
         root_tk.withdraw()
         root_tk.attributes("-topmost", True)

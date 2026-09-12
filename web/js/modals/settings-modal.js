@@ -109,8 +109,8 @@ const SettingsModal = (() => {
   async function handleBrowse() {
     if (!pyApi || !pyApi.select_root_folder) return;
     try {
-      const res = await pyApi.select_root_folder(false);
-      if (res.success && res.path) {
+      const res = await pyApi.select_root_folder();
+      if (res && res.success && res.path) {
         const inputRoot = document.getElementById('settings-input-root');
         if (inputRoot) inputRoot.value = res.path;
       }
