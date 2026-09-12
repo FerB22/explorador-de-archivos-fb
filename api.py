@@ -283,21 +283,35 @@ class AppApi:
             try:
                 import win32gui
                 import win32con
-                for _ in range(60):
-                    time.sleep(0.04)
-                    # Buscar por título de ventana exacto o clase de diálogo estándar #32770
-                    hwnd = win32gui.FindWindow(None, dialog_title)
-                    if not hwnd:
-                        hwnd = win32gui.FindWindow("#32770", dialog_title)
-                    if hwnd:
-                        # Colocar en esquina superior izquierda con margen de 35px
-                        win32gui.SetWindowPos(
-                            hwnd,
-                            win32con.HWND_TOPMOST,
-                            35, 35,
-                            0, 0,
-                            win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
-                        )
+                target_hwnd = None
+
+                for _ in range(80):
+                    time.sleep(0.02)
+                    def enum_cb(hwnd, _):
+                        nonlocal target_hwnd
+                        if win32gui.IsWindowVisible(hwnd):
+                            text = win32gui.GetWindowText(hwnd)
+                            if dialog_title in text:
+                                target_hwnd = hwnd
+                                return False
+                        return True
+
+                    try:
+                        win32gui.EnumWindows(enum_cb, None)
+                    except Exception:
+                        pass
+
+                    if target_hwnd:
+                        # Repetir el ajuste durante unos ciclos para anular el centrado por defecto de Windows
+                        for _ in range(8):
+                            win32gui.SetWindowPos(
+                                target_hwnd,
+                                win32con.HWND_TOPMOST,
+                                30, 30,
+                                0, 0,
+                                win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
+                            )
+                            time.sleep(0.025)
                         break
             except Exception:
                 pass
